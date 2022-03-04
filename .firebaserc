@@ -1,0 +1,11 @@
+{
+  "targets": {
+    "testingremote3": {
+      "hosting": {
+        "try3RemotConfig": [
+          "testingremote3"
+        ]
+      }
+    }
+  }
+}

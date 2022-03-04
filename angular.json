@@ -117,8 +117,16 @@
               "devServerTarget": "try3RemotConfig:serve:production"
             }
           }
+        },
+        "deploy": {
+          "builder": "@angular/fire:deploy",
+          "options": {}
         }
       }
-    }},
-  "defaultProject": "try3RemotConfig"
+    }
+  },
+  "defaultProject": "try3RemotConfig",
+  "cli": {
+    "analytics": false
+  }
 }
