@@ -3,6 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import * as firebase from 'firebase/app';
 import { initializeApp } from "firebase";
 import "@angular/compiler";
+import { RemoteService } from './services/remote.service';
+import { Observable } from 'rxjs';
+import { RemoteModel } from './commons/modelRemote';
 
 @Component({
   selector: 'app-root',
@@ -13,38 +16,26 @@ export class AppComponent implements OnInit
 {
   title = 'try3RemotConfig';
 
-  initFirebase  = initializeApp(environment.firebase);
-  
-  initAnalytics = firebase.analytics(this.initFirebase);
+  observerRemote$ : Observable<RemoteModel>;
 
-  remot_config = firebase.remoteConfig();
+  geocerca : boolean;
 
+  maintenance : boolean;
 
-  get configRemot()
+  constructor(private rsf : RemoteService) 
   {
-    this.remot_config.settings.minimumFetchIntervalMillis = 3600000;
-
-    this.remot_config.defaultConfig = { "maintenance" : "true", "geocerca" : "true" };
-
-    return this.remot_config;
+    this.observerRemote$ = this.rsf.geocercaValue();
   }
-
-  constructor(){ console.clear(); }
 
   ngOnInit(): void 
   {
-    this.configRemot;
+    this.observerRemote$.subscribe((remote)=>
+    {
+      this.geocerca = remote.geocerca;
+      this.maintenance = remote.maintenance;
 
-    console.warn("::::::::::::::::::::::::::::");
-    
-    this.remot_config.fetchAndActivate().then(flag=>console.info('tengo bandera', flag)).catch(err=>console.info('ERROR', err));
-    
-    console.warn('MAINTENANCE : ', this.maintenance);
-    
-    console.warn('GEOCERCA : ', this.geocerca);
+      console.warn('valores desde consumo:\ngeocerca', this.geocerca,'\nmaintenance', this.maintenance);
+    })
   }
-
-  get maintenance () : boolean { return this.remot_config.getValue("maintenance").asBoolean() }
-
-  get geocerca () : boolean { return this.remot_config.getValue("geocerca").asBoolean(); }
+  
 }
