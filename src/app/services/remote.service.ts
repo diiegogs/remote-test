@@ -1,6 +1,8 @@
 import { Injectable, OnInit } from '@angular/core';
-import * as firebase from 'firebase';
 import { Observable, Subject } from 'rxjs';
+import * as firebase from 'firebase';
+
+
 import { environment } from 'src/environments/environment';
 import { RemoteModel } from '../commons/modelRemote';
 
@@ -11,17 +13,14 @@ import { RemoteModel } from '../commons/modelRemote';
 
 export class RemoteService implements OnInit
 {
-  private geocercaPropertie      : boolean = null;
-
-  private modelRemote : RemoteModel =
-  {
-    geocerca    : false,
-    maintenance : false
-  }
-
-  private goecercaObserver$ = new Subject<RemoteModel>();
+  private observerResource$  = new Subject<RemoteModel>();
   
-  private maintenancePropertie   : boolean = null;
+  private modelRemote : RemoteModel=
+  {
+      geocerca    : false,
+      maintenance : false,
+      timeQuery   : 0
+  }
   
   initFirebase = firebase.initializeApp(environment.firebase);
 
@@ -29,41 +28,76 @@ export class RemoteService implements OnInit
 
   initRemotConfig = firebase.remoteConfig();
 
+  // responseSettings : firebase.remoteConfig.RemoteConfig; // tipado
+
   constructor() { }
 
-  ngOnInit(): void 
+  ngOnInit(): void  
   {
   }
 
-  geocercaValue() : Observable<RemoteModel>
+  configLocale(timer:number=36000000) // config local of service remoteConfig
   {
-    this.initRemotConfig.defaultConfig = 
+    this.initRemotConfig.defaultConfig =
     {
       "geocerca"    : false,
-      "maintenance" : false 
-    };
+      "maintenance" : false,
+      "timeQuery"   : timer
+    }
+    if(this.modelRemote.maintenance)
+    {
+      this.initRemotConfig.settings.minimumFetchIntervalMillis = this.modelRemote.timeQuery;
+      // console.log('entro en esquema', this.initRemotConfig.getAll());
+      // return this.initRemotConfig;
+    }
+      else {
+        this.initRemotConfig.settings.minimumFetchIntervalMillis =  timer;
+      }
+      console.log('entro en esquema', this.initRemotConfig.getAll());
+
+      return this.initRemotConfig;
     
-    this.initRemotConfig.settings.minimumFetchIntervalMillis = 5000;
-    this.initRemotConfig.fetchAndActivate()
+    // return this.initRemotConfig;
+  }
+  
+  getRemoteValues() : Observable<RemoteModel>
+  {
+    this.configLocale(); //get configuration local
+    // console.info('impresion de config local', this.configLocale().getAll());
+    this.initRemotConfig.fetchAndActivate()   
     .then(()=>
     {
+      this.modelRemote =
+      {
+        geocerca    : this.initRemotConfig.getValue('geocerca').asBoolean(),
+        maintenance : this.initRemotConfig.getValue('maintenance').asBoolean(),
+        timeQuery   : this.initRemotConfig.getValue('timeQuery').asNumber()
+      };
 
-      this.modelRemote = {
-        geocerca : this.initRemotConfig.getValue('geocerca').asBoolean(),
-        maintenance : this.initRemotConfig.getValue('maintenance').asBoolean()
-      }
-      console.warn('que valores', this.modelRemote);
-      this.goecercaObserver$.next(
+      console.log('value timer', this.modelRemote.timeQuery);
+
+      if(this.modelRemote.maintenance === true)
+      {
+        console.log('entro a validar', this.modelRemote.maintenance);
+        this.configLocale(this.modelRemote.timeQuery);
+        console.log('imrpimo config actualizado', this.configLocale(this.modelRemote.timeQuery).getAll())
+      } 
+        else 
+        {
+          console.log('Usando config default');
+          return;
+        }
+      
+      this.observerResource$.next(
       {
         geocerca : this.modelRemote.geocerca,
         maintenance : this.modelRemote.maintenance
       });
-      
     })
-    .catch((err)=>
-    {
-      console.error('get error remot config', err);
-    });
-    return this.goecercaObserver$.asObservable();
+    .catch(e=> console.info('error', e));
+    
+    return this.observerResource$.asObservable();
   }
+
+
 }

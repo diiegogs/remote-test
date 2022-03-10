@@ -1,5 +1,6 @@
 export interface RemoteModel
 {
-  geocerca   : boolean;
+  geocerca    : boolean;
   maintenance : boolean;
+  timeQuery  ?: number;
 }
